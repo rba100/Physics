@@ -12,6 +12,9 @@ namespace Physics.Engine
         public double GravityConstant { get; set; } = 1;
         public bool Collisions { get; set; }
 
+        public delegate void MargeEventHandler(object sender, MergeEventArgs args);
+        public event MargeEventHandler ParticlesMerged;
+
         private Thread m_Worker;
 
         public void Start()
@@ -72,16 +75,16 @@ namespace Physics.Engine
             // Iterate over all pairs
             for (int i = 0; i < particles.Length - 1; i++)
             {
-                repeat:
+            repeat:
                 for (int j = i + 1; j < particles.Length; j++)
                 {
                     var a = particles[i];
                     var b = particles[j];
                     var displacement = (a.Position - b.Position).Magnitude;
-                    if (Math.Sqrt(a.Mass + b.Mass)/displacement > 1)
+                    if (Math.Sqrt(a.Mass + b.Mass) / displacement > 1)
                     {
                         var merged = MergeParticles(a, b);
-                        Particles.Insert(i,merged);
+                        Particles.Insert(i, merged);
                         Particles.Remove(a);
                         Particles.Remove(b);
                         particles = Particles.ToArray();
@@ -96,7 +99,9 @@ namespace Physics.Engine
             var netMass = a.Mass + b.Mass;
             var netVeolcity = (a.Velocity.WithScale(a.Mass) + b.Velocity.WithScale(b.Mass)).WithScale(1 / netMass);
             var netPosition = (a.Position.WithScale(a.Mass) + b.Position.WithScale(b.Mass)).WithScale(1 / netMass);
-            return new Particle(netPosition, netVeolcity, netMass);
+            var particle = new Particle(netPosition, netVeolcity, netMass);
+            ParticlesMerged?.Invoke(this, new MergeEventArgs {A=a,B=b, Merged = particle });
+            return particle;
         }
 
         private double ForceFromGravity(IParticle a, IParticle b)
@@ -112,5 +117,12 @@ namespace Physics.Engine
                 particle.Position.Accumulate(particle.Velocity);
             }
         }
+    }
+
+    public class MergeEventArgs : EventArgs
+    {
+        public IParticle Merged;
+        public IParticle A { get; set; }
+        public IParticle B { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Timers;
@@ -16,6 +17,10 @@ namespace Physics
         private Bitmap m_Display;
         private int m_Width;
         private int m_Height;
+
+        private const int c_StarMass = 50;
+        private const int c_NewStarFrames = 100;
+        private List<FormingStar> m_FormingStars = new List<FormingStar>();
 
         public Form1()
         {
@@ -60,12 +65,20 @@ namespace Physics
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            CollisionTest(m_Simulator);
+            StarIsBorn(m_Simulator);
 
             m_Simulator.TickInterval = 15;
+            m_Simulator.ParticlesMerged += SimulatorOnParticlesMerged;
             m_Simulator.Start();
             m_Timer.Elapsed += Draw;
             m_Timer.Start();
+        }
+
+        private void SimulatorOnParticlesMerged(object sender, MergeEventArgs args)
+        {
+            if (args.A.Mass > c_StarMass) return;
+            if (args.B.Mass > c_StarMass) return;
+            if (args.Merged.Mass > c_StarMass) m_FormingStars.Add(new FormingStar(args.Merged));
         }
 
         private void CollisionTest(Simulator simulator)
@@ -74,13 +87,23 @@ namespace Physics
             simulator.Collisions = true;
 
             simulator.Particles.Add(new FixedBody(new Vector3(0, 0, 0), 1000));
+
             for (int i = 1; i <= 20; i++)
             {
-                var r = i*10 + 50;
-                var v = Math.Sqrt(simulator.GravityConstant*(1000)/r);
-                var p = new Particle(new Vector3(0,-r,0),new Vector3(v,0,0),5);
+                var r = i * 10 + 50;
+                var v = Math.Sqrt(simulator.GravityConstant * (1000) / r);
+                var p = new Particle(new Vector3(0, -r, 0), new Vector3(v, 0, 0), 5);
                 simulator.Particles.Add(p);
             }
+        }
+
+        private void StarIsBorn(Simulator simulator)
+        {
+            simulator.Collisions = true;
+            simulator.GravityConstant = 1;
+
+            simulator.Particles.Add(new Particle(new Vector3(0, -30, 0), new Vector3(0, 0, 0), 30));
+            simulator.Particles.Add(new Particle(new Vector3(0, 30, 0), new Vector3(0, 0, 0), 30));
         }
 
         private void BinaryWithPlanet(Simulator simulator)
@@ -136,19 +159,46 @@ namespace Physics
                         var zModifier = Math.Pow(2, particle.Position.Z / 80);
                         var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier);
                         //g.FillRectangle(Brushes.DarkCyan, (float)particle.Position.X, (float)particle.Position.Y, dim, dim);
-                        Brush b = particle.Mass > 50 ? Brushes.Goldenrod : Brushes.Blue;
-                        DrawCircleAt(g, b, MapX((float)particle.Position.X), MapY((float)particle.Position.Y), dim);
+                        Brush b = particle.Mass > c_StarMass ? Brushes.Goldenrod : Brushes.Blue;
+                        DrawFilledCircleAt(g, b, MapX((float)particle.Position.X), MapY((float)particle.Position.Y), dim);
+                    }
+
+                    foreach (var formingStar in m_FormingStars.ToArray())
+                    {
+                        if (formingStar.Frames > c_NewStarFrames) m_FormingStars.Remove(formingStar);
+                        var particle = formingStar.Particle;
+                        var zModifier = Math.Pow(2, particle.Position.Z / 80);
+                        var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier);
+
+                        var ratio = (double)formingStar.Frames / c_NewStarFrames;
+
+                        var red = Math.Min(255, ratio * 25 + 230);
+                        var green = Math.Min(255, ratio * 75 + 180);
+                        var blue = Math.Min(255, ratio * 105 + 150);
+                        var colour = Color.FromArgb(255, (int)red, (int)green, (int)blue);
+
+                        DrawCircleAt(g, new Pen(colour), MapX((float)particle.Position.X),
+                            MapY((float)particle.Position.Y), dim + formingStar.Frames);
+
+                        formingStar.Frames++;
                     }
                 }
             }
             pictureBox.Invalidate();
         }
 
-        private void DrawCircleAt(Graphics g, Brush brush, float x, float y, float r)
+        private void DrawFilledCircleAt(Graphics g, Brush brush, float x, float y, float r)
         {
             var radius = r > 500 ? 500 : r;
             if (radius < 1) radius = 1;
             g.FillEllipse(brush, x - radius, y - radius, radius * 2, radius * 2);
+        }
+
+        private void DrawCircleAt(Graphics g, Pen pen, float x, float y, float r)
+        {
+            var radius = r > 500 ? 500 : r;
+            if (radius < 1) radius = 1;
+            g.DrawEllipse(pen, x - radius, y - radius, radius * 2, radius * 2);
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -159,6 +209,17 @@ namespace Physics
         private void pictureBox_Resize(object sender, EventArgs e)
         {
             CreateBitmap();
+        }
+    }
+
+    internal class FormingStar
+    {
+        public IParticle Particle;
+        public int Frames = 0;
+
+        public FormingStar(IParticle particle)
+        {
+            Particle = particle;
         }
     }
 }
