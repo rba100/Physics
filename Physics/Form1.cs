@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Timers;
@@ -61,12 +60,27 @@ namespace Physics
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            BinaryWithFourSatellites(m_Simulator);
+            CollisionTest(m_Simulator);
 
             m_Simulator.TickInterval = 15;
             m_Simulator.Start();
             m_Timer.Elapsed += Draw;
             m_Timer.Start();
+        }
+
+        private void CollisionTest(Simulator simulator)
+        {
+            simulator.GravityConstant = 0.2;
+            simulator.Collisions = true;
+
+            simulator.Particles.Add(new FixedBody(new Vector3(0, 0, 0), 1000));
+            for (int i = 1; i <= 20; i++)
+            {
+                var r = i*10 + 50;
+                var v = Math.Sqrt(simulator.GravityConstant*(1000)/r);
+                var p = new Particle(new Vector3(0,-r,0),new Vector3(v,0,0),5);
+                simulator.Particles.Add(p);
+            }
         }
 
         private void BinaryWithPlanet(Simulator simulator)

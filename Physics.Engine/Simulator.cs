@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace Physics.Engine
@@ -9,7 +10,8 @@ namespace Physics.Engine
 
         public int TickInterval { get; set; } = 10;
         public double GravityConstant { get; set; } = 1;
-        
+        public bool Collisions { get; set; }
+
         private Thread m_Worker;
 
         public void Start()
@@ -26,6 +28,7 @@ namespace Physics.Engine
                 Thread.Sleep(TickInterval);
                 ApplyForces();
                 Move();
+                ApplyCollisions();
             }
         }
 
@@ -59,6 +62,41 @@ namespace Physics.Engine
 
             a.Velocity.Accumulate(aAccelleration);
             b.Velocity.Accumulate(bAccelleration);
+        }
+
+        private void ApplyCollisions()
+        {
+            if (!Collisions) return;
+            var particles = Particles.ToArray();
+
+            // Iterate over all pairs
+            for (int i = 0; i < particles.Length - 1; i++)
+            {
+                repeat:
+                for (int j = i + 1; j < particles.Length; j++)
+                {
+                    var a = particles[i];
+                    var b = particles[j];
+                    var displacement = (a.Position - b.Position).Magnitude;
+                    if (Math.Sqrt(a.Mass + b.Mass)/displacement > 1)
+                    {
+                        var merged = MergeParticles(a, b);
+                        Particles.Insert(i,merged);
+                        Particles.Remove(a);
+                        Particles.Remove(b);
+                        particles = Particles.ToArray();
+                        goto repeat;
+                    }
+                }
+            }
+        }
+
+        private IParticle MergeParticles(IParticle a, IParticle b)
+        {
+            var netMass = a.Mass + b.Mass;
+            var netVeolcity = (a.Velocity.WithScale(a.Mass) + b.Velocity.WithScale(b.Mass)).WithScale(1 / netMass);
+            var netPosition = (a.Position.WithScale(a.Mass) + b.Position.WithScale(b.Mass)).WithScale(1 / netMass);
+            return new Particle(netPosition, netVeolcity, netMass);
         }
 
         private double ForceFromGravity(IParticle a, IParticle b)
