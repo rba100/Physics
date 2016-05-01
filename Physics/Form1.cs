@@ -65,7 +65,7 @@ namespace Physics
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            StarIsBorn(m_Simulator);
+            CollisionTest(m_Simulator);
 
             m_Simulator.TickInterval = 15;
             m_Simulator.ParticlesMerged += SimulatorOnParticlesMerged;
