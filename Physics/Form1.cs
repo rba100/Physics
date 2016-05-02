@@ -14,12 +14,18 @@ namespace Physics
         private Bitmap m_Display;
         private int m_Width;
         private int m_Height;
+
         private float scale = 1;
+        private float offset_x = 0;
+        private float offset_y = 0;
+
 
         private const int c_StarMass = 50;
         private const double c_MoonMass = 0.99;
         private const int c_NewStarFrames = 200;
-        private float m_MaxScroll = (float)Math.Pow(1.2, 16);
+        private const float c_ScrollStepSize = 1.2F;
+        private const int c_ScrollStepsMax = 16;
+        private float m_MaxScroll = (float)Math.Pow(c_ScrollStepSize, c_ScrollStepsMax); // (scroll step size, max scrolls)
         private List<FormingStar> m_FormingStars = new List<FormingStar>();
 
         private Pen[] BoomColours;
@@ -31,21 +37,45 @@ namespace Physics
             pictureBox.Paint += PictureBoxOnPaint;
             CreateBitmap();
             pictureBox.MouseWheel += PictureBox_MouseWheel;
+            this.PreviewKeyDown += PictureBox_PreviewKeyDown;
+        }
+
+        private void PictureBox_PreviewKeyDown(object sender, PreviewKeyDownEventArgs args)
+        {
+            var amount = 100 / scale;
+
+            if (args.KeyCode == Keys.Up)
+            {
+                offset_y += amount;
+            }
+            else if (args.KeyCode == Keys.Down)
+            {
+                offset_y -= amount;
+            }
+            else if (args.KeyCode == Keys.Right)
+            {
+                offset_x -= amount;
+            }
+            else if (args.KeyCode == Keys.Left)
+            {
+                offset_x += amount;
+            }
         }
 
         private void PictureBox_MouseWheel(object sender, MouseEventArgs args)
         {
             var d = args.Delta / 120;
-            
-            for(int i = 0; i < Math.Abs(d); i++)
+
+            for (int i = 0; i < Math.Abs(d); i++)
             {
-                if (d > 0) scale = Math.Min(scale * 1.2F, m_MaxScroll);
-                else scale = Math.Max(scale * 1/1.2F,1/ m_MaxScroll);
+                if (d > 0) scale = Math.Min(scale * c_ScrollStepSize, m_MaxScroll);
+                else scale = Math.Max(scale * 1 / c_ScrollStepSize, 1 / m_MaxScroll);
             }
         }
 
         private void CreateBitmap()
         {
+            if (pictureBox.Size.Width < 1) return;
             m_Width = pictureBox.Size.Width;
             m_Height = pictureBox.Size.Height;
             if (m_Buffer != null)
@@ -64,12 +94,12 @@ namespace Physics
 
         private float MapX(float x)
         {
-            return (x * scale + m_Width / 2);
+            return (x+offset_x) * scale + m_Width / 2;
         }
 
         private float MapY(float y)
         {
-            return (y * scale + m_Height / 2);
+            return (y+offset_y) * scale + m_Height / 2;
         }
 
         private void PictureBoxOnPaint(object sender, PaintEventArgs paintEventArgs)
@@ -77,7 +107,7 @@ namespace Physics
             lock (m_Buffer)
             paintEventArgs.Graphics.DrawImage(m_Buffer, Point.Empty);
         }
-        
+
         private void SimulatorOnParticlesMerged(object sender, MergeEventArgs args)
         {
             var oldA = m_FormingStars.FirstOrDefault(f => f.Particle.Equals(args.A));
@@ -123,10 +153,14 @@ namespace Physics
             var earth = CreatePlanet(sunMass, 70, 1);
             var moon = CreateMoon(earth, 5, earth.Mass / 6);
             var mars = CreatePlanet(sunMass, 90, 1);
-            var jupiter = CreatePlanet(sunMass, 150, 1);
-            var saturn = CreatePlanet(sunMass, 200, 1);
-            var urasnus = CreatePlanet(sunMass, 250, 1);
-            var neptune = CreatePlanet(sunMass, 300, 1);
+
+            var jupiter = CreatePlanet(sunMass, 250, 20);
+            var jMoon1 = CreateMoon(jupiter, 10, 0.01);
+            var jMoon2 = CreateMoon(jupiter, 20, 0.01);
+            var jMoon3 = CreateMoon(jupiter, 30, 0.01);
+            // var saturn = CreatePlanet(sunMass, 200, 1);
+            // var urasnus = CreatePlanet(sunMass, 250, 1);
+            // var neptune = CreatePlanet(sunMass, 300, 1);
 
             simulator.Particles.Add(mercury);
             simulator.Particles.Add(venus);
@@ -134,9 +168,12 @@ namespace Physics
             simulator.Particles.Add(moon);
             //simulator.Particles.Add(mars);
             simulator.Particles.Add(jupiter);
-            simulator.Particles.Add(saturn);
-            simulator.Particles.Add(urasnus);
-            simulator.Particles.Add(neptune);
+            simulator.Particles.Add(jMoon1);
+            simulator.Particles.Add(jMoon2);
+            simulator.Particles.Add(jMoon3);
+            //simulator.Particles.Add(saturn);
+            //simulator.Particles.Add(urasnus);
+            //simulator.Particles.Add(neptune);
         }
 
         private void CollisionTest(Simulator simulator)
@@ -212,7 +249,8 @@ namespace Physics
             {
                 using (var g = Graphics.FromImage(m_Buffer))
                 {
-                    g.Clear(Color.White);
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.Clear(Color.Black);
                     var particles = m_Simulator.Particles.ToArray().OrderBy(p => p.Position.Z);
 
                     foreach (var formingStar in m_FormingStars.ToArray())
@@ -236,7 +274,7 @@ namespace Physics
                     {
                         var zModifier = Math.Pow(2, particle.Position.Z / 160);
                         var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier) * scale;
-                        Brush b = particle.Mass > c_StarMass ? Brushes.Goldenrod : (particle.Mass < c_MoonMass ? Brushes.DarkGray : Brushes.Blue);
+                        Brush b = particle.Mass > c_StarMass ? Brushes.Goldenrod : (particle.Mass < c_MoonMass ? Brushes.Gray : Brushes.LightBlue);
                         DrawFilledCircleAt(g, b, MapX((float)particle.Position.X), MapY((float)particle.Position.Y), dim);
                     }
                 }
