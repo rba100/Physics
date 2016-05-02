@@ -19,14 +19,18 @@ namespace Physics
         private int m_Height;
 
         private const int c_StarMass = 50;
-        private const int c_NewStarFrames = 100;
+        private const int c_NewStarFrames = 200;
         private List<FormingStar> m_FormingStars = new List<FormingStar>();
+
+        private Pen[] BoomColours;
 
         public Form1()
         {
             InitializeComponent();
+            InitColours();
             pictureBox.Paint += PictureBoxOnPaint;
             CreateBitmap();
+            m_Timer.SynchronizingObject = this;
         }
 
         private void CreateBitmap()
@@ -62,10 +66,32 @@ namespace Physics
             lock (m_Buffer)
             paintEventArgs.Graphics.DrawImage(m_Buffer, Point.Empty);
         }
+        
+        private void SimulatorOnParticlesMerged(object sender, MergeEventArgs args)
+        {
+            var oldA = m_FormingStars.FirstOrDefault(f => f.Particle.Equals(args.A));
+            if (oldA != null)
+            {
+                oldA.Particle = args.Merged;
+                return;
+            }
+            var oldB = m_FormingStars.FirstOrDefault(f => f.Particle.Equals(args.B));
+            if (oldB != null)
+            {
+                oldB.Particle = args.Merged;
+                return;
+            }
+            if (args.A.Mass > c_StarMass) return;
+            if (args.B.Mass > c_StarMass) return;
+            if (args.Merged.Mass > c_StarMass)
+            {
+                m_FormingStars.Add(new FormingStar(args.Merged));
+            }
+        }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            CollisionTest(m_Simulator);
+            Sol(m_Simulator);
 
             m_Simulator.TickInterval = 15;
             m_Simulator.ParticlesMerged += SimulatorOnParticlesMerged;
@@ -74,11 +100,20 @@ namespace Physics
             m_Timer.Start();
         }
 
-        private void SimulatorOnParticlesMerged(object sender, MergeEventArgs args)
+        private void Sol(Simulator simulator)
         {
-            if (args.A.Mass > c_StarMass) return;
-            if (args.B.Mass > c_StarMass) return;
-            if (args.Merged.Mass > c_StarMass) m_FormingStars.Add(new FormingStar(args.Merged));
+            simulator.GravityConstant = 0.2;
+            simulator.Collisions = true;
+            var unit = Math.Sqrt(0.5);
+            simulator.Particles.Add(new FixedBody(new Vector3(0, 0, 0), 1000));
+
+            for (int i = 1; i <= 10; i++)
+            {
+                var r = i *20 + 50;
+                var v = Math.Sqrt(simulator.GravityConstant * (1000) / r);
+                var p = new Particle(new Vector3(0, -r, 0), new Vector3(v, 0, 0), 10);
+                simulator.Particles.Add(p);
+            }
         }
 
         private void CollisionTest(Simulator simulator)
@@ -104,6 +139,8 @@ namespace Physics
 
             simulator.Particles.Add(new Particle(new Vector3(0, -30, 0), new Vector3(0, 0, 0), 30));
             simulator.Particles.Add(new Particle(new Vector3(0, 30, 0), new Vector3(0, 0, 0), 30));
+
+            simulator.Particles.Add(new Particle(new Vector3(100, 0, 0), new Vector3(0, 0, 0), 30));
         }
 
         private void BinaryWithPlanet(Simulator simulator)
@@ -153,38 +190,49 @@ namespace Physics
                 using (var g = Graphics.FromImage(m_Buffer))
                 {
                     g.Clear(Color.White);
-                    var particles = m_Simulator.Particles.OrderBy(p => p.Position.Z).ToArray();
+                    var particles = m_Simulator.Particles.ToArray().OrderBy(p => p.Position.Z);
                     foreach (var particle in particles)
                     {
-                        var zModifier = Math.Pow(2, particle.Position.Z / 80);
+                        var zModifier = Math.Pow(2, particle.Position.Z / 160);
                         var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier);
-                        //g.FillRectangle(Brushes.DarkCyan, (float)particle.Position.X, (float)particle.Position.Y, dim, dim);
                         Brush b = particle.Mass > c_StarMass ? Brushes.Goldenrod : Brushes.Blue;
                         DrawFilledCircleAt(g, b, MapX((float)particle.Position.X), MapY((float)particle.Position.Y), dim);
                     }
 
                     foreach (var formingStar in m_FormingStars.ToArray())
                     {
-                        if (formingStar.Frames > c_NewStarFrames) m_FormingStars.Remove(formingStar);
+                        if (formingStar.Frame >= c_NewStarFrames)
+                        {
+                            m_FormingStars.Remove(formingStar);
+                            continue;
+                        }
                         var particle = formingStar.Particle;
-                        var zModifier = Math.Pow(2, particle.Position.Z / 80);
+                        var zModifier = Math.Pow(2, particle.Position.Z / 160);
                         var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier);
 
-                        var ratio = (double)formingStar.Frames / c_NewStarFrames;
+                        DrawCircleAt(g, BoomColours[formingStar.Frame], MapX((float)particle.Position.X),
+                            MapY((float)particle.Position.Y), dim + formingStar.Frame);
 
-                        var red = Math.Min(255, ratio * 25 + 230);
-                        var green = Math.Min(255, ratio * 75 + 180);
-                        var blue = Math.Min(255, ratio * 105 + 150);
-                        var colour = Color.FromArgb(255, (int)red, (int)green, (int)blue);
-
-                        DrawCircleAt(g, new Pen(colour), MapX((float)particle.Position.X),
-                            MapY((float)particle.Position.Y), dim + formingStar.Frames);
-
-                        formingStar.Frames++;
+                        formingStar.Frame++;
                     }
                 }
+                pictureBox.Invalidate();
             }
-            pictureBox.Invalidate();
+        }
+
+        private void InitColours()
+        {
+            var colours = new List<Pen>();
+            for (int i = 0; i < c_NewStarFrames; i++)
+            {
+                var ratio = (double)i / c_NewStarFrames;
+
+                var red = Math.Min(255, ratio * 25 + 230);
+                var green = Math.Min(255, ratio * 75 + 180);
+                var blue = Math.Min(255, ratio * 105 + 150);
+                colours.Add(new Pen(Color.FromArgb(255, (int)red, (int)green, (int)blue)));
+            }
+            BoomColours = colours.ToArray();
         }
 
         private void DrawFilledCircleAt(Graphics g, Brush brush, float x, float y, float r)
@@ -215,7 +263,7 @@ namespace Physics
     internal class FormingStar
     {
         public IParticle Particle;
-        public int Frames = 0;
+        public int Frame = 0;
 
         public FormingStar(IParticle particle)
         {

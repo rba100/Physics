@@ -30,8 +30,8 @@ namespace Physics.Engine
             {
                 Thread.Sleep(TickInterval);
                 ApplyForces();
-                Move();
                 ApplyCollisions();
+                Move();
             }
         }
 
@@ -100,7 +100,7 @@ namespace Physics.Engine
             var netVeolcity = (a.Velocity.WithScale(a.Mass) + b.Velocity.WithScale(b.Mass)).WithScale(1 / netMass);
             var netPosition = (a.Position.WithScale(a.Mass) + b.Position.WithScale(b.Mass)).WithScale(1 / netMass);
             var particle = new Particle(netPosition, netVeolcity, netMass);
-            ParticlesMerged?.Invoke(this, new MergeEventArgs {A=a,B=b, Merged = particle });
+            ParticlesMerged?.Invoke(this, new MergeEventArgs { A = a, B = b, Merged = particle });
             return particle;
         }
 
