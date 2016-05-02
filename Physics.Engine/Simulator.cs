@@ -66,7 +66,7 @@ namespace Physics.Engine
             var force = AtoB.UnitVector().WithScale(ForceFromGravity(a, b, AtoB.Magnitude));
 
             var aAccelleration = (new Vector3(force)).WithScale(1 / a.Mass);
-            var bAccelleration = (new Vector3(force.Inverse())).WithScale(1 / b.Mass);
+            var bAccelleration = (force.Inverse()).WithScale(1 / b.Mass);
 
             a.Velocity.Accumulate(aAccelleration);
             b.Velocity.Accumulate(bAccelleration);

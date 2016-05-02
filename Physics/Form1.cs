@@ -14,9 +14,12 @@ namespace Physics
         private Bitmap m_Display;
         private int m_Width;
         private int m_Height;
+        private float scale = 1;
 
         private const int c_StarMass = 50;
+        private const double c_MoonMass = 0.99;
         private const int c_NewStarFrames = 200;
+        private float m_MaxScroll = (float)Math.Pow(1.2, 16);
         private List<FormingStar> m_FormingStars = new List<FormingStar>();
 
         private Pen[] BoomColours;
@@ -27,6 +30,18 @@ namespace Physics
             InitColours();
             pictureBox.Paint += PictureBoxOnPaint;
             CreateBitmap();
+            pictureBox.MouseWheel += PictureBox_MouseWheel;
+        }
+
+        private void PictureBox_MouseWheel(object sender, MouseEventArgs args)
+        {
+            var d = args.Delta / 120;
+            
+            for(int i = 0; i < Math.Abs(d); i++)
+            {
+                if (d > 0) scale = Math.Min(scale * 1.2F, m_MaxScroll);
+                else scale = Math.Max(scale * 1/1.2F,1/ m_MaxScroll);
+            }
         }
 
         private void CreateBitmap()
@@ -49,12 +64,12 @@ namespace Physics
 
         private float MapX(float x)
         {
-            return x + m_Width / 2;
+            return (x * scale + m_Width / 2);
         }
 
         private float MapY(float y)
         {
-            return y + m_Height / 2;
+            return (y * scale + m_Height / 2);
         }
 
         private void PictureBoxOnPaint(object sender, PaintEventArgs paintEventArgs)
@@ -100,15 +115,28 @@ namespace Physics
             simulator.GravityConstant = 0.2;
             simulator.Collisions = true;
             var unit = Math.Sqrt(0.5);
-            simulator.Particles.Add(new Particle(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 1000));
+            var sunMass = 100;
+            simulator.Particles.Add(new Particle(new Vector3(0, 0, 0), new Vector3(0, 0, 0), sunMass));
 
-            for (int i = 1; i <= 100; i++)
-            {
-                var r = i *20 + 50;
-                var v = Math.Sqrt(simulator.GravityConstant * (1000) / r);
-                var p = new Particle(new Vector3(0, -r, 0), new Vector3(v, 0, 0), 10);
-                simulator.Particles.Add(p);
-            }
+            var mercury = CreatePlanet(sunMass, 50, 1);
+            var venus = CreatePlanet(sunMass, 30, 1);
+            var earth = CreatePlanet(sunMass, 70, 1);
+            var moon = CreateMoon(earth, 5, earth.Mass / 6);
+            var mars = CreatePlanet(sunMass, 90, 1);
+            var jupiter = CreatePlanet(sunMass, 150, 1);
+            var saturn = CreatePlanet(sunMass, 200, 1);
+            var urasnus = CreatePlanet(sunMass, 250, 1);
+            var neptune = CreatePlanet(sunMass, 300, 1);
+
+            simulator.Particles.Add(mercury);
+            simulator.Particles.Add(venus);
+            simulator.Particles.Add(earth);
+            simulator.Particles.Add(moon);
+            //simulator.Particles.Add(mars);
+            simulator.Particles.Add(jupiter);
+            simulator.Particles.Add(saturn);
+            simulator.Particles.Add(urasnus);
+            simulator.Particles.Add(neptune);
         }
 
         private void CollisionTest(Simulator simulator)
@@ -186,13 +214,6 @@ namespace Physics
                 {
                     g.Clear(Color.White);
                     var particles = m_Simulator.Particles.ToArray().OrderBy(p => p.Position.Z);
-                    foreach (var particle in particles)
-                    {
-                        var zModifier = Math.Pow(2, particle.Position.Z / 160);
-                        var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier);
-                        Brush b = particle.Mass > c_StarMass ? Brushes.Goldenrod : Brushes.Blue;
-                        DrawFilledCircleAt(g, b, MapX((float)particle.Position.X), MapY((float)particle.Position.Y), dim);
-                    }
 
                     foreach (var formingStar in m_FormingStars.ToArray())
                     {
@@ -203,12 +224,20 @@ namespace Physics
                         }
                         var particle = formingStar.Particle;
                         var zModifier = Math.Pow(2, particle.Position.Z / 160);
-                        var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier);
+                        var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier) * scale;
 
                         DrawCircleAt(g, BoomColours[formingStar.Frame], MapX((float)particle.Position.X),
                             MapY((float)particle.Position.Y), dim + formingStar.Frame);
 
                         formingStar.Frame++;
+                    }
+
+                    foreach (var particle in particles)
+                    {
+                        var zModifier = Math.Pow(2, particle.Position.Z / 160);
+                        var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier) * scale;
+                        Brush b = particle.Mass > c_StarMass ? Brushes.Goldenrod : (particle.Mass < c_MoonMass ? Brushes.DarkGray : Brushes.Blue);
+                        DrawFilledCircleAt(g, b, MapX((float)particle.Position.X), MapY((float)particle.Position.Y), dim);
                     }
                 }
                 pictureBox.Invalidate();
@@ -252,6 +281,27 @@ namespace Physics
         private void pictureBox_Resize(object sender, EventArgs e)
         {
             CreateBitmap();
+        }
+
+        private double CircularOrbitSpeed(double totalMass, double radius)
+        {
+            return Math.Sqrt(m_Simulator.GravityConstant * (totalMass) / radius);
+        }
+
+        private IParticle CreatePlanet(double sunMass, double altitude, double planetMass)
+        {
+            var planetPosition = new Vector3(altitude, 0, 0);
+            var planetSpeed = CircularOrbitSpeed(sunMass + planetMass, altitude);
+            var planet = new Particle(planetPosition, new Vector3(0, -planetSpeed, 0), planetMass);
+            return planet;
+        }
+
+        private IParticle CreateMoon(IParticle parent, double altitude, double moonMass)
+        {
+            var moonPosition = new Vector3(parent.Position.Magnitude + altitude, 0, 0);
+            var moonSpeed = CircularOrbitSpeed(moonMass + parent.Mass, altitude) + parent.Velocity.Magnitude;
+            return new Particle(moonPosition, new Vector3(0, -moonSpeed, 0), moonMass);
+
         }
     }
 
