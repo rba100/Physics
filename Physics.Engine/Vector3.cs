@@ -5,9 +5,9 @@ namespace Physics.Engine
 {
     public class Vector3
     {
-        public virtual double X { get; set; }
-        public virtual double Y { get; set; }
-        public virtual double Z { get; set; }
+        public double X;
+        public double Y;
+        public double Z;
 
         public Vector3()
         {
@@ -61,8 +61,7 @@ namespace Physics.Engine
 
         public static Vector3 operator -(Vector3 a, Vector3 b)
         {
-            var vector3 = new Vector3();
-            vector3.Accumulate(a);
+            var vector3 = new Vector3(a);
             vector3.X -= b.X;
             vector3.Y -= b.Y;
             vector3.Z -= b.Z;
@@ -87,12 +86,5 @@ namespace Physics.Engine
             Z = Z*d;
             return this;
         }
-    }
-
-    public static class UnitV
-    {
-        public static Vector3 I = new Vector3(1, 0, 0);
-        public static Vector3 J = new Vector3(0, 1, 0);
-        public static Vector3 K = new Vector3(0, 0, 1);
     }
 }

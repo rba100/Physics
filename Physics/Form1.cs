@@ -2,17 +2,14 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Timers;
 using System.Windows.Forms;
 using Physics.Engine;
-using Timer = System.Timers.Timer;
 
 namespace Physics
 {
     public partial class Form1 : Form
     {
         private readonly Simulator m_Simulator = new Simulator();
-        private Timer m_Timer = new Timer(15);
         private Bitmap m_Buffer;
         private Bitmap m_Display;
         private int m_Width;
@@ -30,7 +27,6 @@ namespace Physics
             InitColours();
             pictureBox.Paint += PictureBoxOnPaint;
             CreateBitmap();
-            m_Timer.SynchronizingObject = this;
         }
 
         private void CreateBitmap()
@@ -96,8 +92,7 @@ namespace Physics
             m_Simulator.TickInterval = 15;
             m_Simulator.ParticlesMerged += SimulatorOnParticlesMerged;
             m_Simulator.Start();
-            m_Timer.Elapsed += Draw;
-            m_Timer.Start();
+            m_Simulator.Tick += Draw;
         }
 
         private void Sol(Simulator simulator)
@@ -105,9 +100,9 @@ namespace Physics
             simulator.GravityConstant = 0.2;
             simulator.Collisions = true;
             var unit = Math.Sqrt(0.5);
-            simulator.Particles.Add(new FixedBody(new Vector3(0, 0, 0), 1000));
+            simulator.Particles.Add(new Particle(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 1000));
 
-            for (int i = 1; i <= 10; i++)
+            for (int i = 1; i <= 100; i++)
             {
                 var r = i *20 + 50;
                 var v = Math.Sqrt(simulator.GravityConstant * (1000) / r);
@@ -121,7 +116,7 @@ namespace Physics
             simulator.GravityConstant = 0.2;
             simulator.Collisions = true;
 
-            simulator.Particles.Add(new FixedBody(new Vector3(0, 0, 0), 1000));
+            simulator.Particles.Add(new Particle(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 1000));
 
             for (int i = 1; i <= 20; i++)
             {
@@ -157,7 +152,7 @@ namespace Physics
         {
             simulator.GravityConstant = 15;
 
-            simulator.Particles.Add(new FixedBody(new Vector3(0, 0, 0), 100));
+            simulator.Particles.Add(new Particle(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 100));
             simulator.Particles.Add(new Particle(new Vector3(0, 200, 0), new Vector3(-2.2, 0, 0), 1));
             simulator.Particles.Add(new Particle(new Vector3(0, 150, 0), new Vector3(-1.5, 0, 0), 1));
             simulator.Particles.Add(new Particle(new Vector3(0, 100, 0), new Vector3(-3, 0, 0), 1));
@@ -166,7 +161,7 @@ namespace Physics
         private void FixedStarWithPlanetAndMoon(Simulator simulator)
         {
             simulator.GravityConstant = 2;
-            simulator.Particles.Add(new FixedBody(new Vector3(0, 0, 0), 100));
+            simulator.Particles.Add(new Particle(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 100));
             simulator.Particles.Add(new Particle(new Vector3(0, 220, 0), new Vector3(-1, 0, 0), 50));
             simulator.Particles.Add(new Particle(new Vector3(0, 250, 0), new Vector3(-2.5, 0, 0), 1));
         }
@@ -183,7 +178,7 @@ namespace Physics
             simulator.Particles.Add(new Particle(new Vector3(0, 200, 0), new Vector3(0, 0, 3), 20));
         }
 
-        private void Draw(object sender, ElapsedEventArgs e)
+        private void Draw(object sender, EventArgs e)
         {
             lock (m_Buffer)
             {

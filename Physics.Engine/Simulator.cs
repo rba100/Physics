@@ -15,6 +15,8 @@ namespace Physics.Engine
         public delegate void MargeEventHandler(object sender, MergeEventArgs args);
         public event MargeEventHandler ParticlesMerged;
 
+        public event EventHandler Tick;
+
         private Thread m_Worker;
 
         public void Start()
@@ -26,12 +28,14 @@ namespace Physics.Engine
 
         private void Worker()
         {
+            var args = new EventArgs();
             while (true)
             {
                 Thread.Sleep(TickInterval);
                 ApplyForces();
                 ApplyCollisions();
                 Move();
+                Tick?.Invoke(this, args);
             }
         }
 
@@ -58,7 +62,8 @@ namespace Physics.Engine
 
         private void ApplyMutualGravity(IParticle a, IParticle b)
         {
-            var force = (b.Position - a.Position).UnitVector().WithScale(ForceFromGravity(a, b));
+            var AtoB = (b.Position - a.Position);
+            var force = AtoB.UnitVector().WithScale(ForceFromGravity(a, b, AtoB.Magnitude));
 
             var aAccelleration = (new Vector3(force)).WithScale(1 / a.Mass);
             var bAccelleration = (new Vector3(force.Inverse())).WithScale(1 / b.Mass);
@@ -104,9 +109,8 @@ namespace Physics.Engine
             return particle;
         }
 
-        private double ForceFromGravity(IParticle a, IParticle b)
+        private double ForceFromGravity(IParticle a, IParticle b, double displacement)
         {
-            var displacement = (b.Position - a.Position).Magnitude;
             return GravityConstant * (a.Mass * b.Mass) / (displacement * displacement);
         }
 
