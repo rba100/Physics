@@ -4,14 +4,14 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using Physics.Engine;
+using Physics.Scenarios;
 
 namespace Physics
 {
     public partial class Form1 : Form
     {
-        private readonly Simulator m_Simulator = new Simulator();
+        private Simulator m_Simulator;
         private Bitmap m_Buffer;
-        private Bitmap m_Display;
         private int m_Width;
         private int m_Height;
 
@@ -34,10 +34,27 @@ namespace Physics
         {
             InitializeComponent();
             InitColours();
+            InitScenarios();
             pictureBox.Paint += PictureBoxOnPaint;
             CreateBitmap();
             pictureBox.MouseWheel += PictureBox_MouseWheel;
             this.PreviewKeyDown += PictureBox_PreviewKeyDown;
+        }
+
+        private void InitScenarios()
+        {
+            List<Scenario> scenarios = new List<Scenario>();
+
+            scenarios.AddRange(GetType().Assembly
+                                        .GetTypes()
+                                        .Where(t => t.BaseType == typeof(Scenario))
+                                        .Select(Activator.CreateInstance)
+                                        .Cast<Scenario>()
+                                        .OrderBy(s=>s.ToString()));
+
+            cbScenarioList.DataSource = scenarios;
+
+            cbScenarioList.SelectedIndex = 0;
         }
 
         private void PictureBox_PreviewKeyDown(object sender, PreviewKeyDownEventArgs args)
@@ -132,116 +149,23 @@ namespace Physics
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            //Sol(m_Simulator);
-            BinaryWithFourSatellites(m_Simulator);
+            ResetSim(cbScenarioList.SelectedItem as Scenario);
+        }
 
-            m_Simulator.TickInterval = 1;
+        private void ResetSim(Scenario scenario)
+        {
+            m_Simulator?.Dispose();
+
+            m_Simulator = new Simulator() { TickInterval = 1 };
+            m_FormingStars = new List<FormingStar>();
+
             m_Simulator.ParticlesMerged += SimulatorOnParticlesMerged;
-            m_Simulator.Start();
             m_Simulator.Tick += Draw;
-        }
 
-        private void Sol(Simulator simulator)
-        {
-            simulator.GravityConstant = 0.2;
-            simulator.Collisions = true;
-            var unit = Math.Sqrt(0.5);
-            var sunMass = 100;
-            simulator.Particles.Add(new Particle(new Vector3(0, 0, 0), new Vector3(0, 0, 0), sunMass));
+            if (scenario == null) return;
+            scenario.Configure(m_Simulator);
 
-            var mercury = CreatePlanet(sunMass, 50, 1);
-            var venus = CreatePlanet(sunMass, 30, 1);
-            var earth = CreatePlanet(sunMass, 70, 1);
-            var moon = CreateMoon(earth, 5, earth.Mass / 6);
-            var mars = CreatePlanet(sunMass, 90, 1);
-
-            var jupiter = CreatePlanet(sunMass, 250, 20);
-            var jMoon1 = CreateMoon(jupiter, 10, 0.01);
-            var jMoon2 = CreateMoon(jupiter, 20, 0.01);
-            var jMoon3 = CreateMoon(jupiter, 30, 0.01);
-            // var saturn = CreatePlanet(sunMass, 200, 1);
-            // var urasnus = CreatePlanet(sunMass, 250, 1);
-            // var neptune = CreatePlanet(sunMass, 300, 1);
-
-            simulator.Particles.Add(mercury);
-            simulator.Particles.Add(venus);
-            simulator.Particles.Add(earth);
-            simulator.Particles.Add(moon);
-            //simulator.Particles.Add(mars);
-            simulator.Particles.Add(jupiter);
-            simulator.Particles.Add(jMoon1);
-            simulator.Particles.Add(jMoon2);
-            simulator.Particles.Add(jMoon3);
-            //simulator.Particles.Add(saturn);
-            //simulator.Particles.Add(urasnus);
-            //simulator.Particles.Add(neptune);
-        }
-
-        private void CollisionTest(Simulator simulator)
-        {
-            simulator.GravityConstant = 0.2;
-            simulator.Collisions = true;
-
-            simulator.Particles.Add(new Particle(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 1000));
-
-            for (int i = 1; i <= 20; i++)
-            {
-                var r = i * 10 + 50;
-                var v = Math.Sqrt(simulator.GravityConstant * (1000) / r);
-                var p = new Particle(new Vector3(0, -r, 0), new Vector3(v, 0, 0), 5);
-                simulator.Particles.Add(p);
-            }
-        }
-
-        private void StarIsBorn(Simulator simulator)
-        {
-            simulator.Collisions = true;
-            simulator.GravityConstant = 1;
-
-            simulator.Particles.Add(new Particle(new Vector3(0, -30, 0), new Vector3(0, 0, 0), 30));
-            simulator.Particles.Add(new Particle(new Vector3(0, 30, 0), new Vector3(0, 0, 0), 30));
-
-            simulator.Particles.Add(new Particle(new Vector3(100, 0, 0), new Vector3(0, 0, 0), 30));
-        }
-
-        private void BinaryWithPlanet(Simulator simulator)
-        {
-            simulator.GravityConstant = 2;
-
-            simulator.Particles.Add(new Particle(new Vector3(0, -30, 0), new Vector3(-1.3, 0, 0), 100));
-            simulator.Particles.Add(new Particle(new Vector3(0, 30, 0), new Vector3(1.3, 0, 0), 100));
-
-            simulator.Particles.Add(new Particle(new Vector3(0, -200, 0), new Vector3(1, 0, 0), 1));
-        }
-
-        private void FixedStar(Simulator simulator)
-        {
-            simulator.GravityConstant = 15;
-
-            simulator.Particles.Add(new Particle(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 100));
-            simulator.Particles.Add(new Particle(new Vector3(0, 200, 0), new Vector3(-2.2, 0, 0), 1));
-            simulator.Particles.Add(new Particle(new Vector3(0, 150, 0), new Vector3(-1.5, 0, 0), 1));
-            simulator.Particles.Add(new Particle(new Vector3(0, 100, 0), new Vector3(-3, 0, 0), 1));
-        }
-
-        private void FixedStarWithPlanetAndMoon(Simulator simulator)
-        {
-            simulator.GravityConstant = 2;
-            simulator.Particles.Add(new Particle(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 100));
-            simulator.Particles.Add(new Particle(new Vector3(0, 220, 0), new Vector3(-1, 0, 0), 50));
-            simulator.Particles.Add(new Particle(new Vector3(0, 250, 0), new Vector3(-2.5, 0, 0), 1));
-        }
-
-        private void BinaryWithFourSatellites(Simulator simulator)
-        {
-            simulator.GravityConstant = 15;
-
-            simulator.Particles.Add(new Particle(new Vector3(0, -30, 0), new Vector3(-3, 0, 0), 100));
-            simulator.Particles.Add(new Particle(new Vector3(0, 30, 0), new Vector3(3, 0, 0), 100));
-            simulator.Particles.Add(new Particle(new Vector3(0, 0, -200), new Vector3(-3, 0, 0), 20));
-            simulator.Particles.Add(new Particle(new Vector3(0, 0, 200), new Vector3(3, 0, 0), 20));
-            simulator.Particles.Add(new Particle(new Vector3(0, -200, 0), new Vector3(0, 0, -3), 20));
-            simulator.Particles.Add(new Particle(new Vector3(0, 200, 0), new Vector3(0, 0, 3), 20));
+            m_Simulator.Start();
         }
 
         private void Draw(object sender, EventArgs e)
@@ -315,7 +239,7 @@ namespace Physics
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            m_Simulator.Stop();
+            m_Simulator?.Dispose();
         }
 
         private void pictureBox_Resize(object sender, EventArgs e)
@@ -323,25 +247,9 @@ namespace Physics
             CreateBitmap();
         }
 
-        private double CircularOrbitSpeed(double totalMass, double radius)
+        private void btLoad_Click(object sender, EventArgs e)
         {
-            return Math.Sqrt(m_Simulator.GravityConstant * (totalMass) / radius);
-        }
-
-        private IParticle CreatePlanet(double sunMass, double altitude, double planetMass)
-        {
-            var planetPosition = new Vector3(altitude, 0, 0);
-            var planetSpeed = CircularOrbitSpeed(sunMass + planetMass, altitude);
-            var planet = new Particle(planetPosition, new Vector3(0, -planetSpeed, 0), planetMass);
-            return planet;
-        }
-
-        private IParticle CreateMoon(IParticle parent, double altitude, double moonMass)
-        {
-            var moonPosition = new Vector3(parent.Position.Magnitude + altitude, 0, 0);
-            var moonSpeed = CircularOrbitSpeed(moonMass + parent.Mass, altitude) + parent.Velocity.Magnitude;
-            return new Particle(moonPosition, new Vector3(0, -moonSpeed, 0), moonMass);
-
+            ResetSim(cbScenarioList.SelectedItem as Scenario);
         }
     }
 

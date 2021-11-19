@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace Physics.Engine
 {
-    public class Simulator
+    public class Simulator : IDisposable
     {
         public List<IParticle> Particles { get; set; } = new List<IParticle>();
 
@@ -93,7 +93,7 @@ namespace Physics.Engine
                         Particles.Remove(a);
                         Particles.Remove(b);
                         particles = Particles.ToArray();
-                        goto repeat;
+                        goto repeat; // Oh no I didn't.
                     }
                 }
             }
@@ -120,6 +120,11 @@ namespace Physics.Engine
             {
                 particle.Position.Accumulate(particle.Velocity);
             }
+        }
+
+        public void Dispose()
+        {
+            Stop();
         }
     }
 

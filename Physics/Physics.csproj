@@ -54,6 +54,12 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Scenarios\BinaryWithPlanet.cs" />
+    <Compile Include="Scenarios\Scenario.cs" />
+    <Compile Include="Scenarios\SolSystem.cs" />
+    <Compile Include="Scenarios\StarFormation.cs" />
+    <Compile Include="Scenarios\Trisolaris.cs" />
+    <Compile Include="Scenarios\Unstable3D.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
