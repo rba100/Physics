@@ -11,6 +11,8 @@ namespace Physics.Engine
         public int TickInterval { get; set; } = 10;
         public double GravityConstant { get; set; } = 1;
         public bool Collisions { get; set; }
+        public double StellarIgnitionMass { get; set; } = 50;
+        public double StellaCollapseMass { get; set; } = 500;
 
         public delegate void MargeEventHandler(object sender, MergeEventArgs args);
         public event MargeEventHandler ParticlesMerged;
@@ -62,8 +64,8 @@ namespace Physics.Engine
 
         private void ApplyMutualGravity(IParticle a, IParticle b)
         {
-            var AtoB = (b.Position - a.Position);
-            var force = AtoB.UnitVector().WithScale(ForceFromGravity(a, b, AtoB.Magnitude));
+            var AtoB = b.Position - a.Position;
+            var force = AtoB.UnitVector().WithScale(ForceFromGravity(a, b));
 
             var aAccelleration = (new Vector3(force)).WithScale(1 / a.Mass);
             var bAccelleration = (force.Inverse()).WithScale(1 / b.Mass);
@@ -109,9 +111,10 @@ namespace Physics.Engine
             return particle;
         }
 
-        private double ForceFromGravity(IParticle a, IParticle b, double displacement)
+        private double ForceFromGravity(IParticle a, IParticle b)
         {
-            return GravityConstant * (a.Mass * b.Mass) / (displacement * displacement);
+            var d = (b.Position - a.Position).Magnitude;
+            return GravityConstant * (a.Mass * b.Mass) / (d * d);
         }
 
         private void Move()

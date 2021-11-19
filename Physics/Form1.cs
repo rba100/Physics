@@ -17,8 +17,6 @@ namespace Physics
 
         private float scale = 1;
 
-
-        private const int c_StarMass = 50;
         private const double c_MoonMass = 0.99;
         private const int c_NewStarFrames = 200;
         private const float c_ScrollStepSize = 1.2F;
@@ -115,9 +113,9 @@ namespace Physics
                 oldB.Particle = args.Merged;
                 return;
             }
-            if (args.A.Mass > c_StarMass) return;
-            if (args.B.Mass > c_StarMass) return;
-            if (args.Merged.Mass > c_StarMass)
+            if (args.A.Mass > m_Simulator.StellarIgnitionMass) return;
+            if (args.B.Mass > m_Simulator.StellarIgnitionMass) return;
+            if (args.Merged.Mass > m_Simulator.StellarIgnitionMass)
             {
                 m_FormingStars.Add(new FormingStar(args.Merged));
             }
@@ -163,12 +161,15 @@ namespace Physics
                             m_FormingStars.Remove(formingStar);
                             continue;
                         }
-                        var particle = formingStar.Particle;
+                        var particle = Rotate(formingStar.Particle);
                         var zModifier = Math.Pow(2, particle.Position.Z / 160);
                         var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier) * scale;
 
-                        DrawCircleAt(g, BoomColours[formingStar.Frame], MapX((float)particle.Position.X),
-                            MapY((float)particle.Position.Y), dim + formingStar.Frame);
+                        DrawCircleAt(g,
+                                     BoomColours[formingStar.Frame], 
+                                     MapX((float)particle.Position.X),
+                                     MapY((float)particle.Position.Y),
+                                     dim + formingStar.Frame);
 
                         formingStar.Frame++;
                     }
@@ -177,9 +178,18 @@ namespace Physics
                     {
                         var zModifier = Math.Pow(2, particle.Position.Z / 160 * scale);
                         var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier) * scale;
-                        Brush b = particle.Mass > c_StarMass ? Brushes.Goldenrod : (particle.Mass < c_MoonMass ? Brushes.Gray : Brushes.LightBlue);
+                        Brush b = particle.Mass > m_Simulator.StellaCollapseMass ? 
+                            Brushes.Black : particle.Mass > m_Simulator.StellarIgnitionMass ?
+                                Brushes.Goldenrod : (particle.Mass < c_MoonMass ?
+                                    Brushes.Gray : Brushes.LightBlue);
 
-                        DrawFilledCircleAt(g, b, MapX((float)particle.Position.X), MapY((float)particle.Position.Y), dim);
+                        var x = MapX((float)particle.Position.X);
+                        var y = MapY((float)particle.Position.Y);
+                        if(particle.Mass > m_Simulator.StellaCollapseMass)
+                        {
+                            DrawFilledCircleAt(g, Brushes.White, x, y, dim*1.01f);
+                        }
+                        DrawFilledCircleAt(g, b, x, y, dim);
                     }
                 }
 
@@ -277,8 +287,8 @@ namespace Physics
             }
             else
             {
-                m_ScrollOffset = new Point(e.X - m_MouseLast.X + m_ScrollOffset.X,
-                                           e.Y - m_MouseLast.Y + m_ScrollOffset.Y);
+                m_ScrollOffset = new Point((e.X - m_MouseLast.X)*10000 / (int)(scale*10000) + m_ScrollOffset.X,
+                                           (e.Y - m_MouseLast.Y)*10000 / (int)(scale*10000) + m_ScrollOffset.Y);
                 m_MouseLast = e.Location;
             }
         }
