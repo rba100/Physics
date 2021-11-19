@@ -1,4 +1,5 @@
 ﻿using Physics.Engine;
+using System;
 
 namespace Physics.Scenarios
 {
@@ -9,10 +10,19 @@ namespace Physics.Scenarios
             simulator.Collisions = true;
             simulator.GravityConstant = 1;
 
-            simulator.Particles.Add(new Particle(new Vector3(0, -30, 0), new Vector3(0, 0, 0), 30));
-            simulator.Particles.Add(new Particle(new Vector3(0, 30, 0), new Vector3(0, 0, 0), 30));
+            var rand = new Random();
 
-            simulator.Particles.Add(new Particle(new Vector3(100, 0, 0), new Vector3(0, 0, 0), 30));
+            for(int i = 0; i < 1000; i++)
+            {
+                var r = 400 * Math.Sqrt(rand.NextDouble());
+                var a = Math.PI * rand.NextDouble() * 2;
+
+                var position = new Vector3(Math.Cos(a) * r, Math.Sin(a) * r, 0);
+                var xVel = a > Math.PI ? 0.05 : -0.05;
+                var velocity = new Vector3(xVel, 0, 0);
+
+                simulator.Particles.Add(new Particle(position, velocity, 0.1));
+            }
         }
 
         public override string ToString()

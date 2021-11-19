@@ -204,6 +204,7 @@ namespace Physics
                         DrawFilledCircleAt(g, b, MapX((float)particle.Position.X), MapY((float)particle.Position.Y), dim);
                     }
                 }
+
                 pictureBox.Invalidate();
             }
         }

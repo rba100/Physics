@@ -101,10 +101,10 @@ namespace Physics.Engine
 
         private IParticle MergeParticles(IParticle a, IParticle b)
         {
-            var netMass = a.Mass + b.Mass;
-            var netVeolcity = (a.Velocity.WithScale(a.Mass) + b.Velocity.WithScale(b.Mass)).WithScale(1 / netMass);
-            var netPosition = (a.Position.WithScale(a.Mass) + b.Position.WithScale(b.Mass)).WithScale(1 / netMass);
-            var particle = new Particle(netPosition, netVeolcity, netMass);
+            var mass = a.Mass + b.Mass;
+            var veolcity = (a.Velocity.WithScale(a.Mass) + b.Velocity.WithScale(b.Mass)).WithScale(1 / mass);
+            var position = (a.Position.WithScale(a.Mass) + b.Position.WithScale(b.Mass)).WithScale(1 / mass);
+            var particle = new Particle(position, veolcity, mass);
             ParticlesMerged?.Invoke(this, new MergeEventArgs { A = a, B = b, Merged = particle });
             return particle;
         }
