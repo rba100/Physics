@@ -132,9 +132,10 @@ namespace Physics
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            Sol(m_Simulator);
+            //Sol(m_Simulator);
+            BinaryWithFourSatellites(m_Simulator);
 
-            m_Simulator.TickInterval = 15;
+            m_Simulator.TickInterval = 1;
             m_Simulator.ParticlesMerged += SimulatorOnParticlesMerged;
             m_Simulator.Start();
             m_Simulator.Tick += Draw;
@@ -289,11 +290,12 @@ namespace Physics
             {
                 var ratio = (double)i / c_NewStarFrames;
 
-                var red = Math.Min(255, ratio * 25 + 230);
-                var green = Math.Min(255, ratio * 75 + 180);
-                var blue = Math.Min(255, ratio * 105 + 150);
+                var red = Math.Min(255, ratio * (25 + 230));
+                var green = Math.Min(255, ratio * (75 + 180));
+                var blue = Math.Min(255, ratio * (105 + 150));
                 colours.Add(new Pen(Color.FromArgb(255, (int)red, (int)green, (int)blue)));
             }
+            colours.Reverse();
             BoomColours = colours.ToArray();
         }
 
