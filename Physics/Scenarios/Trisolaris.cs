@@ -40,7 +40,9 @@ namespace Physics.Scenarios
             simulator.Particles.Add(star2);
             simulator.Particles.Add(star3);
 
-            var planet = CreateMoon(new Particle(Vector3.Zero, Vector3.Zero, simulator.Particles.Sum(p => p.Mass)),
+            var averageMass = new Particle(Vector3.Zero, Vector3.Zero, simulator.Particles.Sum(p => p.Mass));
+
+            var planet = CreateMoon(parent: averageMass,
                                     altitude: 500,
                                     mass: 1,
                                     gravityConstant: simulator.GravityConstant);
