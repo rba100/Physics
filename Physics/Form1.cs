@@ -16,8 +16,6 @@ namespace Physics
         private int m_Height;
 
         private float scale = 1;
-        private float offset_x = 0;
-        private float offset_y = 0;
 
 
         private const int c_StarMass = 50;
@@ -38,7 +36,6 @@ namespace Physics
             pictureBox.Paint += PictureBoxOnPaint;
             CreateBitmap();
             pictureBox.MouseWheel += PictureBox_MouseWheel;
-            this.PreviewKeyDown += PictureBox_PreviewKeyDown;
         }
 
         private void InitScenarios()
@@ -56,28 +53,6 @@ namespace Physics
             cbScenarioList.DataSource = scenarios;
 
             cbScenarioList.SelectedIndex = 0;
-        }
-
-        private void PictureBox_PreviewKeyDown(object sender, PreviewKeyDownEventArgs args)
-        {
-            var amount = 100 / scale;
-
-            if (args.KeyCode == Keys.Up)
-            {
-                offset_y += amount;
-            }
-            else if (args.KeyCode == Keys.Down)
-            {
-                offset_y -= amount;
-            }
-            else if (args.KeyCode == Keys.Right)
-            {
-                offset_x -= amount;
-            }
-            else if (args.KeyCode == Keys.Left)
-            {
-                offset_x += amount;
-            }
         }
 
         private void PictureBox_MouseWheel(object sender, MouseEventArgs args)
@@ -112,12 +87,12 @@ namespace Physics
 
         private float MapX(float x)
         {
-            return (x+offset_x) * scale + m_Width / 2;
+            return (x+ m_ScrollOffset.X) * scale + m_Width / 2;
         }
 
         private float MapY(float y)
         {
-            return (y+offset_y) * scale + m_Height / 2;
+            return (y+ m_ScrollOffset.Y) * scale + m_Height / 2;
         }
 
         private void PictureBoxOnPaint(object sender, PaintEventArgs paintEventArgs)
@@ -200,7 +175,7 @@ namespace Physics
 
                     foreach (var particle in orderedParticles)
                     {
-                        var zModifier = Math.Pow(2, particle.Position.Z / 160);
+                        var zModifier = Math.Pow(2, particle.Position.Z / 160 * scale);
                         var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier) * scale;
                         Brush b = particle.Mass > c_StarMass ? Brushes.Goldenrod : (particle.Mass < c_MoonMass ? Brushes.Gray : Brushes.LightBlue);
 
@@ -261,44 +236,58 @@ namespace Physics
         {
             var v = p.Position;
 
-            var r1 = new Vector3(v.X * Math.Cos(rot.Item1) - v.Y * Math.Sin(rot.Item1),
-                                 v.X * Math.Sin(rot.Item1) + v.Y * Math.Cos(rot.Item1),
+            var r1 = new Vector3(v.X * Math.Cos(m_ViewRotation.Item1) - v.Y * Math.Sin(m_ViewRotation.Item1),
+                                 v.X * Math.Sin(m_ViewRotation.Item1) + v.Y * Math.Cos(m_ViewRotation.Item1),
                                  v.Z);
 
-            var r2 = new Vector3(r1.X * Math.Cos(rot.Item2) + r1.Z * Math.Sin(rot.Item2),
+            var r2 = new Vector3(r1.X * Math.Cos(m_ViewRotation.Item2) + r1.Z * Math.Sin(m_ViewRotation.Item2),
                                  r1.Y,
-                                 -v.X * Math.Sin(rot.Item2) + v.Z * Math.Cos(rot.Item2));
+                                 -v.X * Math.Sin(m_ViewRotation.Item2) + v.Z * Math.Cos(m_ViewRotation.Item2));
 
             return new Particle(r2, Vector3.Zero, p.Mass);
         }
 
-        private Tuple<double, double> rot = new Tuple<double, double>(0,0);
-
-        Point m_MouseDown;
+        Point m_MouseLast;
+        Point m_ScrollOffset = new Point(0,0);
+        private Tuple<double, double> m_ViewRotation = new Tuple<double, double>(0, 0);
         bool m_IsMouseDown;
+        bool m_IsMouseDownRotate;
 
         private void pictureBox_MouseDown(object sender, MouseEventArgs e)
         {
-            m_MouseDown = e.Location;
+            m_MouseLast = e.Location;
             m_IsMouseDown = true;
+            m_IsMouseDownRotate = e.Button == MouseButtons.Middle;
         }
 
         private void pictureBox_MouseUp(object sender, MouseEventArgs e)
         {
             m_IsMouseDown = false;
+            m_IsMouseDownRotate = false;
         }
 
         private void pictureBox_MouseMove(object sender, MouseEventArgs e)
         {
             if (!m_IsMouseDown) return;
-            rot = new Tuple<double, double>(
-                ((e.X - m_MouseDown.X) / 100.0 * Math.PI) % Math.PI * 2,
-                ((e.Y - m_MouseDown.Y) / 100.0 * Math.PI) % Math.PI * 2);
+            if (m_IsMouseDownRotate)
+            {
+                m_ViewRotation = new Tuple<double, double>(
+                    ((e.X - m_MouseLast.X) / 100.0 * Math.PI) % Math.PI * 2,
+                    ((e.Y - m_MouseLast.Y) / 100.0 * Math.PI) % Math.PI * 2);
+            }
+            else
+            {
+                m_ScrollOffset = new Point(e.X - m_MouseLast.X + m_ScrollOffset.X,
+                                           e.Y - m_MouseLast.Y + m_ScrollOffset.Y);
+                m_MouseLast = e.Location;
+            }
         }
 
         private void btResetRotation_Click(object sender, EventArgs e)
         {
-            rot = new Tuple<double, double>(0, 0);
+            m_ViewRotation = new Tuple<double, double>(0, 0);
+            m_ScrollOffset.X = 0;
+            m_ScrollOffset.Y = 0;
         }
     }
 
