@@ -31,6 +31,7 @@
             this.pictureBox = new System.Windows.Forms.PictureBox();
             this.cbScenarioList = new System.Windows.Forms.ComboBox();
             this.btLoad = new System.Windows.Forms.Button();
+            this.btResetRotation = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -45,6 +46,9 @@
             this.pictureBox.Size = new System.Drawing.Size(779, 641);
             this.pictureBox.TabIndex = 0;
             this.pictureBox.TabStop = false;
+            this.pictureBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureBox_MouseDown);
+            this.pictureBox.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureBox_MouseMove);
+            this.pictureBox.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pictureBox_MouseUp);
             this.pictureBox.Resize += new System.EventHandler(this.pictureBox_Resize);
             // 
             // cbScenarioList
@@ -65,11 +69,22 @@
             this.btLoad.UseVisualStyleBackColor = true;
             this.btLoad.Click += new System.EventHandler(this.btLoad_Click);
             // 
+            // btResetRotation
+            // 
+            this.btResetRotation.Location = new System.Drawing.Point(363, 12);
+            this.btResetRotation.Name = "btResetRotation";
+            this.btResetRotation.Size = new System.Drawing.Size(132, 25);
+            this.btResetRotation.TabIndex = 3;
+            this.btResetRotation.Text = "Reset View";
+            this.btResetRotation.UseVisualStyleBackColor = true;
+            this.btResetRotation.Click += new System.EventHandler(this.btResetRotation_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(779, 690);
+            this.Controls.Add(this.btResetRotation);
             this.Controls.Add(this.btLoad);
             this.Controls.Add(this.cbScenarioList);
             this.Controls.Add(this.pictureBox);
@@ -88,6 +103,7 @@
         private System.Windows.Forms.PictureBox pictureBox;
         private System.Windows.Forms.ComboBox cbScenarioList;
         private System.Windows.Forms.Button btLoad;
+        private System.Windows.Forms.Button btResetRotation;
     }
 }
 

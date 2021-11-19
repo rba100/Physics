@@ -123,7 +123,7 @@ namespace Physics
         private void PictureBoxOnPaint(object sender, PaintEventArgs paintEventArgs)
         {
             lock (m_Buffer)
-            paintEventArgs.Graphics.DrawImage(m_Buffer, Point.Empty);
+                paintEventArgs.Graphics.DrawImage(m_Buffer, Point.Empty);
         }
 
         private void SimulatorOnParticlesMerged(object sender, MergeEventArgs args)
@@ -173,11 +173,13 @@ namespace Physics
         {
             lock (m_Buffer)
             {
+                var particles = m_Simulator.Particles.Select(Rotate).ToArray();
+                
                 using (var g = Graphics.FromImage(m_Buffer))
                 {
                     g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                     g.Clear(Color.Black);
-                    var particles = m_Simulator.Particles.ToArray().OrderBy(p => p.Position.Z);
+                    var orderedParticles = particles.OrderBy(p => p.Position.Z);
 
                     foreach (var formingStar in m_FormingStars.ToArray())
                     {
@@ -196,11 +198,12 @@ namespace Physics
                         formingStar.Frame++;
                     }
 
-                    foreach (var particle in particles)
+                    foreach (var particle in orderedParticles)
                     {
                         var zModifier = Math.Pow(2, particle.Position.Z / 160);
                         var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier) * scale;
                         Brush b = particle.Mass > c_StarMass ? Brushes.Goldenrod : (particle.Mass < c_MoonMass ? Brushes.Gray : Brushes.LightBlue);
+
                         DrawFilledCircleAt(g, b, MapX((float)particle.Position.X), MapY((float)particle.Position.Y), dim);
                     }
                 }
@@ -252,6 +255,50 @@ namespace Physics
         private void btLoad_Click(object sender, EventArgs e)
         {
             ResetSim(cbScenarioList.SelectedItem as Scenario);
+        }
+
+        private Particle Rotate(IParticle p)
+        {
+            var v = p.Position;
+
+            var r1 = new Vector3(v.X * Math.Cos(rot.Item1) - v.Y * Math.Sin(rot.Item1),
+                                 v.X * Math.Sin(rot.Item1) + v.Y * Math.Cos(rot.Item1),
+                                 v.Z);
+
+            var r2 = new Vector3(r1.X * Math.Cos(rot.Item2) + r1.Z * Math.Sin(rot.Item2),
+                                 r1.Y,
+                                 -v.X * Math.Sin(rot.Item2) + v.Z * Math.Cos(rot.Item2));
+
+            return new Particle(r2, Vector3.Zero, p.Mass);
+        }
+
+        private Tuple<double, double> rot = new Tuple<double, double>(0,0);
+
+        Point m_MouseDown;
+        bool m_IsMouseDown;
+
+        private void pictureBox_MouseDown(object sender, MouseEventArgs e)
+        {
+            m_MouseDown = e.Location;
+            m_IsMouseDown = true;
+        }
+
+        private void pictureBox_MouseUp(object sender, MouseEventArgs e)
+        {
+            m_IsMouseDown = false;
+        }
+
+        private void pictureBox_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!m_IsMouseDown) return;
+            rot = new Tuple<double, double>(
+                ((e.X - m_MouseDown.X) / 100.0 * Math.PI) % Math.PI * 2,
+                ((e.Y - m_MouseDown.Y) / 100.0 * Math.PI) % Math.PI * 2);
+        }
+
+        private void btResetRotation_Click(object sender, EventArgs e)
+        {
+            rot = new Tuple<double, double>(0, 0);
         }
     }
 
