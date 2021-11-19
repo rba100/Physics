@@ -50,7 +50,8 @@ namespace Physics
                                         .Where(t => t.BaseType == typeof(Scenario))
                                         .Select(Activator.CreateInstance)
                                         .Cast<Scenario>()
-                                        .OrderBy(s=>s.ToString()));
+                                        .OrderBy(s => s.ToString() != "Trisolaris")
+                                        .ThenBy(s => s.ToString()));
 
             cbScenarioList.DataSource = scenarios;
 

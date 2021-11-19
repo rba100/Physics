@@ -85,5 +85,7 @@ namespace Physics.Engine
             Z = Z*d;
             return this;
         }
+
+        public static Vector3 Zero = new Vector3(0, 0, 0);
     }
 }
