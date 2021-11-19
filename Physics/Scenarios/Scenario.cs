@@ -15,11 +15,11 @@ namespace Physics.Scenarios
             return planet;
         }
 
-        protected IParticle CreateMoon(IParticle parent, double altitude, double moonMass, double gravityConstant = 0.2)
+        protected IParticle CreateMoon(IParticle parent, double altitude, double mass, double gravityConstant = 0.2)
         {
             var moonPosition = new Vector3(parent.Position.Magnitude + altitude, 0, 0);
-            var moonSpeed = CircularOrbitSpeed(moonMass + parent.Mass, altitude, gravityConstant) + parent.Velocity.Magnitude;
-            return new Particle(moonPosition, new Vector3(0, -moonSpeed, 0), moonMass);
+            var moonSpeed = CircularOrbitSpeed(mass + parent.Mass, altitude, gravityConstant) + parent.Velocity.Magnitude;
+            return new Particle(moonPosition, new Vector3(0, -moonSpeed, 0), mass);
         }
 
         private double CircularOrbitSpeed(double totalMass, double radius, double gravityConstant)

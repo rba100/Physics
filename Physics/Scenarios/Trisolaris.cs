@@ -1,4 +1,5 @@
 ﻿using Physics.Engine;
+using System.Linq;
 
 namespace Physics.Scenarios
 {
@@ -39,14 +40,12 @@ namespace Physics.Scenarios
             simulator.Particles.Add(star2);
             simulator.Particles.Add(star3);
 
-            var planet = CreateMoon(new Particle(Vector3.Zero, Vector3.Zero, 3 * starMass), 500, 1, simulator.GravityConstant);
+            var planet = CreateMoon(new Particle(Vector3.Zero, Vector3.Zero, simulator.Particles.Sum(p => p.Mass)),
+                                    altitude: 500,
+                                    mass: 1,
+                                    gravityConstant: simulator.GravityConstant);
 
             simulator.Particles.Add(planet);
-        }
-
-        private double GetSpeed(double displacement, double total)
-        {
-            return total / (displacement * displacement);
         }
 
         public override string ToString()
