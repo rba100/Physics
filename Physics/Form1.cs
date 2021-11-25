@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 using Physics.Engine;
 using Physics.Scenarios;
 
 namespace Physics
 {
+    [SupportedOSPlatform("windows")]
     public partial class Form1 : Form
     {
         private Simulator m_Simulator;
