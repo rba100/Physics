@@ -255,9 +255,7 @@ namespace Physics
 
             var r2 = new Vector3(r1.X,
                                  r1.Y * Math.Cos(m_ViewRotation.Item2) - r1.Z * Math.Sin(m_ViewRotation.Item2),
-                                 r1.Y * Math.Sin(m_ViewRotation.Item2) + v.Z * Math.Cos(m_ViewRotation.Item2));
-
-            
+                                 r1.Y * Math.Sin(m_ViewRotation.Item2) + r1.Z * Math.Cos(m_ViewRotation.Item2));            
 
             return new Particle(r2, Vector3.Zero, p.Mass);
         }
