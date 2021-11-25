@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Runtime.Versioning;
 using System.Windows.Forms;
 
 namespace Physics
@@ -11,6 +9,7 @@ namespace Physics
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         [STAThread]
         static void Main()
         {
