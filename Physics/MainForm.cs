@@ -4,13 +4,14 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
+
 using Physics.Engine;
 using Physics.Scenarios;
 
 namespace Physics
 {
     [SupportedOSPlatform("windows")]
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
         private Simulator m_Simulator;
         private Bitmap m_Buffer;
@@ -28,7 +29,7 @@ namespace Physics
 
         private Pen[] BoomColours;
 
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
             InitColours();
@@ -300,17 +301,6 @@ namespace Physics
             m_ViewRotation = new Tuple<double, double>(0, 0);
             m_ScrollOffset.X = 0;
             m_ScrollOffset.Y = 0;
-        }
-    }
-
-    internal class FormingStar
-    {
-        public IParticle Particle;
-        public int Frame = 0;
-
-        public FormingStar(IParticle particle)
-        {
-            Particle = particle;
         }
     }
 }
