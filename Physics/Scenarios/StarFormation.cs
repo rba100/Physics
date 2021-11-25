@@ -38,7 +38,7 @@ namespace Physics.Scenarios
             simulator.Collisions = true;
             simulator.GravityConstant = 3;
             simulator.StellarIgnitionMass = 200;
-            simulator.StellaCollapseMass = 15000;
+            simulator.StellaCollapseMass = 32000;
 
             var rand = new Random();
 

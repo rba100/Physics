@@ -12,7 +12,9 @@ namespace Physics.Engine
         public double GravityConstant { get; set; } = 1;
         public bool Collisions { get; set; }
         public double StellarIgnitionMass { get; set; } = 50;
-        public double StellaCollapseMass { get; set; } = 500;
+        public double StellaCollapseMass { get; set; } = 1500;
+
+        public double MaxPhysicsDistance = 2000;
 
         public delegate void MargeEventHandler(object sender, MergeEventArgs args);
         public event MargeEventHandler ParticlesMerged;
@@ -65,6 +67,7 @@ namespace Physics.Engine
         private void ApplyMutualGravity(IParticle a, IParticle b)
         {
             var AtoB = b.Position - a.Position;
+            if (AtoB.Magnitude > MaxPhysicsDistance) return;
             var force = AtoB.UnitVector().WithScale(ForceFromGravity(a, b));
 
             var aAccelleration = (new Vector3(force)).WithScale(1 / a.Mass);
@@ -88,6 +91,7 @@ namespace Physics.Engine
                     var a = particles[i];
                     var b = particles[j];
                     var displacement = (a.Position - b.Position).Magnitude;
+                    if (displacement > MaxPhysicsDistance) continue;
                     if (Math.Sqrt(a.Mass + b.Mass) / displacement > 1)
                     {
                         var merged = MergeParticles(a, b);
