@@ -166,14 +166,15 @@ namespace Physics
                         }
                         var particle = Rotate(formingStar.Particle);
                         var zModifier = Math.Pow(2, particle.Position.Z / 160);
-                        var dim = (float)(Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier) * scale;
+                        var dim = (float)((Math.Max(Math.Sqrt(particle.Mass), 2) * zModifier) + formingStar.Frame) * scale;
 
                         DrawCircleAt(g,
                                      BoomColours[formingStar.Frame], 
                                      MapX((float)particle.Position.X),
                                      MapY((float)particle.Position.Y),
-                                     dim + formingStar.Frame);
+                                     dim);
 
+                        formingStar.Frame++;
                         formingStar.Frame++;
                     }
 
@@ -219,7 +220,7 @@ namespace Physics
         private void DrawFilledCircleAt(Graphics g, Brush brush, float x, float y, float r)
         {
             var radius = r > 500 ? 500 : r;
-            if (radius < 1) radius = 1;
+            if (radius < 0.5) radius = 0.5f;
             g.FillEllipse(brush, x - radius, y - radius, radius * 2, radius * 2);
         }
 
