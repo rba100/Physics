@@ -23,6 +23,8 @@ namespace Physics.Engine
 
         private Thread m_Worker;
 
+        private bool m_Disposed;
+
         public void Start()
         {
             if (m_Worker != null) return;
@@ -33,7 +35,7 @@ namespace Physics.Engine
         private void Worker()
         {
             var args = new EventArgs();
-            while (true)
+            while (!m_Disposed)
             {
                 Thread.Sleep(TickInterval);
                 ApplyForces();
@@ -43,10 +45,11 @@ namespace Physics.Engine
             }
         }
 
-        public void Stop()
+        private void Stop()
         {
+            m_Disposed = true;
             if (m_Worker == null) return;
-            m_Worker.Abort();
+            m_Worker.Join(TimeSpan.FromSeconds(10));
             m_Worker = null;
         }
 
