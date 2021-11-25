@@ -6,10 +6,10 @@ namespace Physics
 
     internal class FormingStar
     {
-        public IParticle Particle;
+        public Particle Particle;
         public int Frame = 0;
 
-        public FormingStar(IParticle particle)
+        public FormingStar(Particle particle)
         {
             Particle = particle;
         }

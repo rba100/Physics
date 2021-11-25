@@ -6,7 +6,7 @@ namespace Physics.Engine
 {
     public class Simulator : IDisposable
     {
-        public List<IParticle> Particles { get; set; } = new List<IParticle>();
+        public List<Particle> Particles { get; set; } = new List<Particle>();
 
         public int TickInterval { get; set; } = 10;
         public double GravityConstant { get; set; } = 1;
@@ -67,7 +67,7 @@ namespace Physics.Engine
             }
         }
 
-        private void ApplyMutualGravity(IParticle a, IParticle b)
+        private void ApplyMutualGravity(Particle a, Particle b)
         {
             var AtoB = b.Position - a.Position;
             if (AtoB.Magnitude > MaxPhysicsDistance) return;
@@ -108,7 +108,7 @@ namespace Physics.Engine
             }
         }
 
-        private IParticle MergeParticles(IParticle a, IParticle b)
+        private Particle MergeParticles(Particle a, Particle b)
         {
             var mass = a.Mass + b.Mass;
             var veolcity = (a.Velocity.WithScale(a.Mass) + b.Velocity.WithScale(b.Mass)).WithScale(1 / mass);
@@ -118,7 +118,7 @@ namespace Physics.Engine
             return particle;
         }
 
-        private double ForceFromGravity(IParticle a, IParticle b)
+        private double ForceFromGravity(Particle a, Particle b)
         {
             var d = (b.Position - a.Position).Magnitude;
             return GravityConstant * (a.Mass * b.Mass) / (d * d);
@@ -140,8 +140,8 @@ namespace Physics.Engine
 
     public class MergeEventArgs : EventArgs
     {
-        public IParticle Merged;
-        public IParticle A { get; set; }
-        public IParticle B { get; set; }
+        public Particle Merged;
+        public Particle A { get; set; }
+        public Particle B { get; set; }
     }
 }

@@ -7,7 +7,7 @@ namespace Physics.Scenarios
     {
         public abstract void Configure(Simulator simulator);
 
-        protected IParticle CreatePlanetWithCircularOrbit(double sunMass, double altitude, double planetMass, double gravityConstant = 0.2)
+        protected Particle CreatePlanetWithCircularOrbit(double sunMass, double altitude, double planetMass, double gravityConstant = 0.2)
         {
             var planetPosition = new Vector3(altitude, 0, 0);
             var planetSpeed = CircularOrbitSpeed(sunMass + planetMass, altitude, gravityConstant);
@@ -15,7 +15,7 @@ namespace Physics.Scenarios
             return planet;
         }
 
-        protected IParticle CreateMoon(IParticle parent, double altitude, double mass, double gravityConstant = 0.2)
+        protected Particle CreateMoon(Particle parent, double altitude, double mass, double gravityConstant = 0.2)
         {
             var moonPosition = new Vector3(parent.Position.Magnitude + altitude, 0, 0);
             var moonSpeed = CircularOrbitSpeed(mass + parent.Mass, altitude, gravityConstant) + parent.Velocity.Magnitude;

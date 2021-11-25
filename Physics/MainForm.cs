@@ -245,7 +245,7 @@ namespace Physics
             ResetSim(cbScenarioList.SelectedItem as Scenario);
         }
 
-        private Particle Rotate(IParticle p)
+        private Particle Rotate(Particle p)
         {
             var v = p.Position;
 
