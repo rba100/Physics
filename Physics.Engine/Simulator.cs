@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -16,26 +16,23 @@ namespace Physics.Engine
 
         public double MaxPhysicsDistance = 2000;
 
-        public delegate void MargeEventHandler(object sender, MergeEventArgs args);
-        public event MargeEventHandler ParticlesMerged;
+        public event EventHandler<EventArgs> Tick;
+        public event EventHandler<MergeEventArgs> ParticlesMerged;
 
-        public event EventHandler Tick;
-
-        private Thread m_Worker;
-
-        private bool m_Disposed;
+        private Thread WorkerThread;
+        private bool isDisposed;
 
         public void Start()
         {
-            if (m_Worker != null) return;
-            m_Worker = new Thread(Worker);
-            m_Worker.Start();
+            if (WorkerThread != null) return;
+            WorkerThread = new Thread(Worker);
+            WorkerThread.Start();
         }
 
         private void Worker()
         {
             var args = new EventArgs();
-            while (!m_Disposed)
+            while (!isDisposed)
             {
                 Thread.Sleep(TickInterval);
                 ApplyForces();
@@ -45,26 +42,16 @@ namespace Physics.Engine
             }
         }
 
-        private void Stop()
+        public void Stop()
         {
-            m_Disposed = true;
-            if (m_Worker == null) return;
-            m_Worker.Join(TimeSpan.FromSeconds(10));
-            m_Worker = null;
+            isDisposed = true;
+            WorkerThread?.Join(TimeSpan.FromSeconds(10));
+            WorkerThread = null;
         }
 
         private void ApplyForces()
         {
-            var particles = Particles.ToArray();
-
-            // Iterate over all pairs
-            for (int i = 0; i < particles.Length - 1; i++)
-            {
-                for (int j = i + 1; j < particles.Length; j++)
-                {
-                    ApplyMutualGravity(particles[i], particles[j]);
-                }
-            }
+            ProcessParticles((a, b) => ApplyMutualGravity(a, b));
         }
 
         private void ApplyMutualGravity(Particle a, Particle b)
@@ -83,45 +70,28 @@ namespace Physics.Engine
         private void ApplyCollisions()
         {
             if (!Collisions) return;
-            var particles = Particles.ToArray();
-
-            // Iterate over all pairs
-            for (int i = 0; i < particles.Length - 1; i++)
+            ProcessParticles((a, b) =>
             {
-            repeat:
-                for (int j = i + 1; j < particles.Length; j++)
+                var displacement = (a.Position - b.Position).Magnitude;
+                if (displacement > MaxPhysicsDistance) return;
+                if (Math.Sqrt(a.Mass + b.Mass) / displacement > 1)
                 {
-                    var a = particles[i];
-                    var b = particles[j];
-                    var displacement = (a.Position - b.Position).Magnitude;
-                    if (displacement > MaxPhysicsDistance) continue;
-                    if (Math.Sqrt(a.Mass + b.Mass) / displacement > 1)
-                    {
-                        var merged = MergeParticles(a, b);
-                        Particles.Insert(i, merged);
-                        Particles.Remove(a);
-                        Particles.Remove(b);
-                        particles = Particles.ToArray();
-                        goto repeat; // Oh no I didn't.
-                    }
+                    var merged = MergeParticles(a, b);
+                    Particles.Insert(Particles.IndexOf(a), merged);
+                    Particles.Remove(a);
+                    Particles.Remove(b);
                 }
-            }
+            });
         }
 
         private Particle MergeParticles(Particle a, Particle b)
         {
             var mass = a.Mass + b.Mass;
-            var veolcity = (a.Velocity.WithScale(a.Mass) + b.Velocity.WithScale(b.Mass)).WithScale(1 / mass);
+            var velocity = (a.Velocity.WithScale(a.Mass) + b.Velocity.WithScale(b.Mass)).WithScale(1 / mass);
             var position = (a.Position.WithScale(a.Mass) + b.Position.WithScale(b.Mass)).WithScale(1 / mass);
-            var particle = new Particle(position, veolcity, mass);
+            var particle = new Particle(position, velocity, mass);
             ParticlesMerged?.Invoke(this, new MergeEventArgs { A = a, B = b, Merged = particle });
             return particle;
-        }
-
-        private double ForceFromGravity(Particle a, Particle b)
-        {
-            var d = (b.Position - a.Position).Magnitude;
-            return GravityConstant * (a.Mass * b.Mass) / (d * d);
         }
 
         private void Move()
@@ -130,6 +100,25 @@ namespace Physics.Engine
             {
                 particle.Position.Accumulate(particle.Velocity);
             }
+        }
+
+        private void ProcessParticles(Action<Particle, Particle> action)
+        {
+            var particles = Particles.ToArray();
+
+            for (int i = 0; i < particles.Length - 1; i++)
+            {
+                for (int j = i + 1; j < particles.Length; j++)
+                {
+                    action(particles[i], particles[j]);
+                }
+            }
+        }
+
+        private double ForceFromGravity(Particle a, Particle b)
+        {
+            var distance = (b.Position - a.Position).Magnitude;
+            return GravityConstant * (a.Mass * b.Mass) / (distance * distance);
         }
 
         public void Dispose()
